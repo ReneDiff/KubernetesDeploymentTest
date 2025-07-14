@@ -38,14 +38,15 @@ jobs:
         run: |
           docker build -t ${{ steps.image_name.outputs.lowercase_name }}:${{ github.sha }} .
 
-      - name: Scan image with Trivy and upload results
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: ${{ steps.image_name.outputs.lowercase_name }}:${{ github.sha }}
-          format: 'sarif'
-          output: 'trivy-results.sarif'
-          severity: 'HIGH,CRITICAL' 
-          vex: './openvex.json' 
+      - name: Scan image with Trivy using VEX
+        run: |
+          trivy image \
+            --format sarif \
+            --output trivy-results.sarif \
+            --severity HIGH,CRITICAL \
+            --exit-code 1 \
+            --vex ./openvex.json \
+            ${{ steps.image_name.outputs.lowercase_name }}:${{ github.sha }}
       
       - name: Upload Trivy scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v3
