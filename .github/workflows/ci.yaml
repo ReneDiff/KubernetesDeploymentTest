@@ -4,23 +4,24 @@ on:
   push:
     branches: [ "main" ]
 
-env:
-  IMAGE_NAME: ghcr.io/${{ github.repository }}/min-nginx-app
-  TRIVY_VERSION: 0.52.0
-
 jobs:
   build-scan-push:
     name: Build, Scan and Push
     runs-on: ubuntu-latest
-
     permissions:
       contents: read
-      packages: write 
-      security-events: write 
+      packages: write
+      security-events: write
 
     steps:
-      - name: Checkout repository
+      - name: Checkout application repository
         uses: actions/checkout@v4
+
+      - name: Checkout VEX repository
+        uses: actions/checkout@v4
+        with:
+          repository: ReneDiff/vex-hub 
+          path: ./vex-data
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
@@ -28,27 +29,17 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Generate lower-case image name
-        id: image_name
+      
+      - name: Generate and build Docker image
+        id: build_image
         run: |
-          echo "lowercase_name=$(echo ghcr.io/${{ github.repository }}/min-nginx-app | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
-    
+          IMAGE_NAME=$(echo ghcr.io/${{ github.repository }}/min-nginx-app | tr '[:upper:]' '[:lower:]')
+          echo "IMAGE_NAME_WITH_TAG=${IMAGE_NAME}:${{ github.sha }}" >> $GITHUB_OUTPUT
+          docker build -t $IMAGE_NAME:${{ github.sha }} .
 
-      - name: Build Docker image
-        run: |
-          docker build -t ${{ steps.image_name.outputs.lowercase_name }}:${{ github.sha }} .
-    
       - name: Install Trivy
         run: |
-          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin v${{ env.TRIVY_VERSION }}
-          trivy --version
-
-      - name: Checkout VEX repository
-        uses: actions/checkout@v4
-        with:
-          repository: ReneDiff/vex-hub 
-          path: ./vex-data # Tjekker repo'et ud i en mappe ved navn "vex-data"
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin v0.52.0
 
       - name: Scan image with Trivy using central VEX
         id: scan
@@ -59,8 +50,8 @@ jobs:
             --output trivy-results.sarif \
             --severity HIGH,CRITICAL \
             --exit-code 1 \
-            --vex ./vex-data/openvex.json \
-            ${{ steps.image_name.outputs.lowercase_name }}:${{ github.sha }}
+            --vex ./vex-data/vex.json \
+            ${{ steps.build_image.outputs.IMAGE_NAME_WITH_TAG }}
       
       - name: Upload Trivy scan results to GitHub Security tab
         if: always()
@@ -69,13 +60,13 @@ jobs:
           sarif_file: 'trivy-results.sarif'
 
       - name: Check scan outcome and fail job if needed
-        if: steps.scan.outcome == 'failure' 
+        if: steps.scan.outcome == 'failure'
         run: |
           echo "Trivy scan fandt kritiske sårbarheder. Byggeriet fejles."
           exit 1
           
       - name: Push Docker image to registry
-        if: steps.scan.outcome == 'success' 
+        if: steps.scan.outcome == 'success'
         run: |
           echo "Scan var en succes. Pusher image til registry."
-          docker push ${{ steps.image_name.outputs.lowercase_name }}:${{ github.sha }}
+          docker push ${{ steps.build_image.outputs.IMAGE_NAME_WITH_TAG }}
