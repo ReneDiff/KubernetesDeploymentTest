@@ -44,16 +44,22 @@ jobs:
           curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin v${{ env.TRIVY_VERSION }}
           trivy --version
 
-      - name: Scan image with Trivy using VEX
-        id: scan # 
-        continue-on-error: true # Fortæller GitHub, at den skal fortsætte, selvom dette trin fejler
+      - name: Checkout VEX repository
+        uses: actions/checkout@v4
+        with:
+          repository: ReneDiff/vex-hub 
+          path: ./vex-data # Tjekker repo'et ud i en mappe ved navn "vex-data"
+
+      - name: Scan image with Trivy using central VEX
+        id: scan
+        continue-on-error: true
         run: |
           trivy image \
             --format sarif \
             --output trivy-results.sarif \
             --severity HIGH,CRITICAL \
             --exit-code 1 \
-            --vex ./vex.json \
+            --vex ./vex-data/openvex.json \
             ${{ steps.image_name.outputs.lowercase_name }}:${{ github.sha }}
       
       - name: Upload Trivy scan results to GitHub Security tab
