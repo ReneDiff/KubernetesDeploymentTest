@@ -70,3 +70,5 @@ jobs:
         run: |
           echo "Scan var en succes. Pusher image til registry."
           docker push ${{ steps.build_image.outputs.IMAGE_NAME_WITH_TAG }}
+
+# EOF
