@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-nginx-app
+spec:
+  replicas: 2 
+  selector:
+    matchLabels:
+      app: my-nginx
+  template:
+    metadata:
+      labels:
+        app: my-nginx
+    spec:
+      containers:
+      - name: nginx
+        image: min-nginx-app:v1
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 80
+        resources: 
+          requests:
+            cpu: "100m" # Anmoder om 1/10 af en CPU-kerne
+            memory: "128Mi"
+          limits:
+            cpu: "200m" # Må aldrig bruge mere end 2/10 af en CPU-kerne
+            memory: "256Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-nginx-service 
+spec:
+  selector:
+    app: my-nginx # Denne service sender trafik til alle pods med denne label
+  ports:
+    - protocol: TCP
+      port: 80 # Den port, servicen lytter på
+      targetPort: 80 # Den port, trafikken skal sendes til på pod'en
