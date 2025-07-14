@@ -1,0 +1,17 @@
+{
+  "@context": "https://openvex.dev/ns/v0.2.0",
+  "@id": "https://example.com/vex-documents/1",
+  "author": "ReneDiff",
+  "timestamp": "2025-07-14T11:30:00.000Z",
+  "statements": [
+    {
+      "vulnerability": "CVE-2023-45853",
+      "products": [
+        "pkg:oci/min-nginx-app@${{ github.sha }}"
+      ],
+      "status": "not_affected",
+      "justification": "vulnerable_code_not_in_execute_path",
+      "impact_statement": "Denne sårbarhed findes i en NGINX-modul, vi ikke har aktiveret i vores konfiguration."
+    }
+  ]
+}
