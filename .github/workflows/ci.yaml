@@ -50,7 +50,7 @@ jobs:
             --output trivy-results.sarif \
             --severity HIGH,CRITICAL \
             --exit-code 1 \
-            --vex ./vex-data/vex.json \
+            --vex ./vex-data/openvex.json \
             ${{ steps.build_image.outputs.IMAGE_NAME_WITH_TAG }}
       
       - name: Upload Trivy scan results to GitHub Security tab
