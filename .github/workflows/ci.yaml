@@ -40,7 +40,7 @@ jobs:
       - name: Install Trivy
         run: |
           curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin v0.52.0
-          
+
       - name: DIAGNOSTIC - Find the exact PURL
         run: |
           echo "--- Running Trivy SBOM scan to find the correct PURL for the image ---"
@@ -50,6 +50,8 @@ jobs:
       - name: Scan image with Trivy using central VEX
         id: scan
         continue-on-error: true
+        env:
+            TRIVY_DEBUG: "true"
         run: |
           trivy image \
             --format sarif \
