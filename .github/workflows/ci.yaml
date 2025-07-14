@@ -45,20 +45,31 @@ jobs:
           trivy --version
 
       - name: Scan image with Trivy using VEX
+        id: scan # 
+        continue-on-error: true # Fortæller GitHub, at den skal fortsætte, selvom dette trin fejler
         run: |
           trivy image \
             --format sarif \
             --output trivy-results.sarif \
             --severity HIGH,CRITICAL \
             --exit-code 1 \
-            --vex ./openvex.json \
+            --vex ./vex.json \
             ${{ steps.image_name.outputs.lowercase_name }}:${{ github.sha }}
       
       - name: Upload Trivy scan results to GitHub Security tab
+        if: always()
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: 'trivy-results.sarif'
 
-      - name: Push Docker image to registry
+      - name: Check scan outcome and fail job if needed
+        if: steps.scan.outcome == 'failure' 
         run: |
+          echo "Trivy scan fandt kritiske sårbarheder. Byggeriet fejles."
+          exit 1
+          
+      - name: Push Docker image to registry
+        if: steps.scan.outcome == 'success' 
+        run: |
+          echo "Scan var en succes. Pusher image til registry."
           docker push ${{ steps.image_name.outputs.lowercase_name }}:${{ github.sha }}
