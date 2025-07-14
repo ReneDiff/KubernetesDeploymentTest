@@ -28,14 +28,20 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Generate lower-case image name
+        id: image_name
+        run: |
+          echo "lowercase_name=$(echo ghcr.io/${{ github.repository }}/min-nginx-app | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+    
+
       - name: Build Docker image
         run: |
-          docker build -t $IMAGE_NAME:${{ github.sha }} .
+          docker build -t ${{ steps.image_name.outputs.lowercase_name }}:${{ github.sha }} .
 
       - name: Scan image with Trivy and upload results
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: $IMAGE_NAME:${{ github.sha }}
+          image-ref: ${{ steps.image_name.outputs.lowercase_name }}:${{ github.sha }}
           format: 'sarif'
           output: 'trivy-results.sarif'
           severity: 'HIGH,CRITICAL' 
@@ -47,4 +53,4 @@ jobs:
 
       - name: Push Docker image to registry
         run: |
-          docker push $IMAGE_NAME:${{ github.sha }}
+          docker push ${{ steps.image_name.outputs.lowercase_name }}:${{ github.sha }}
