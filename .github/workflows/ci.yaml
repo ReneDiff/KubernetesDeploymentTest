@@ -6,6 +6,7 @@ on:
 
 env:
   IMAGE_NAME: ghcr.io/${{ github.repository }}/min-nginx-app
+  TRIVY_VERSION: 0.52.0
 
 jobs:
   build-scan-push:
@@ -37,6 +38,11 @@ jobs:
       - name: Build Docker image
         run: |
           docker build -t ${{ steps.image_name.outputs.lowercase_name }}:${{ github.sha }} .
+    
+      - name: Install Trivy
+        run: |
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin v${{ env.TRIVY_VERSION }}
+          trivy --version
 
       - name: Scan image with Trivy using VEX
         run: |
